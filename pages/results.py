@@ -1,0 +1,273 @@
+"""
+Assessment Results and Faculty Human-in-the-Loop Review Page.
+Enables detailed evidence inspection, score overrides, and audit trails.
+"""
+
+import streamlit as st
+import json
+import os
+from database.repository import AssessmentRepository
+from database.db import get_db
+from database.models import Assessment, Evaluation, Submission
+from core.score_calculator import ScoreCalculator
+from core.report_generator import ReportGenerator
+
+
+def render():
+    st.markdown('<div class="academic-header"><h1>Assessment Results & Human Review</h1><p>Inspect AI Evidence, Verify Criteria Marks, and Audit Faculty Overrides</p></div>', unsafe_allow_html=True)
+
+    assessments = AssessmentRepository.get_all_assessments()
+    if not assessments:
+        st.info("No assessments currently available. Create an assessment first.")
+        return
+
+    # Assessment Selector
+    as_options = {a["title"]: a["id"] for a in assessments}
+    sel_as_title = st.selectbox("Select Assessment", list(as_options.keys()))
+    sel_as_id = as_options[sel_as_title]
+
+    # Load evaluations for selected assessment
+    evaluations = AssessmentRepository.get_evaluations_for_assessment(sel_as_id)
+    if not evaluations:
+        st.warning(f"No student submissions have been evaluated for '{sel_as_title}' yet. Go to **Batch Evaluation** to evaluate answer papers.")
+        return
+
+    # Student Selector
+    student_opts = {
+        f"{e['student_identifier']} ({e['filename'] or 'Direct Text'}) - Score: {e['final_awarded_marks']:.1f}/{e['maximum_marks']:.1f} [{e['review_status']}]": e
+        for e in evaluations
+    }
+    sel_student_label = st.selectbox("Select Student Submission to Inspect", list(student_opts.keys()))
+    current_eval = student_opts[sel_student_label]
+
+    st.markdown("<hr/>", unsafe_allow_html=True)
+
+    # Top KPI Metrics for this submission
+    m1, m2, m3, m4 = st.columns(4)
+    pct = (current_eval["final_awarded_marks"] / max(1.0, current_eval["maximum_marks"])) * 100
+    grade_band, grade_desc = ScoreCalculator.get_academic_grade_band(pct)
+
+    with m1:
+        st.markdown(f"""
+        <div class="stat-card">
+            <div class="stat-label">Final Awarded Marks</div>
+            <div class="stat-value">{current_eval['final_awarded_marks']:.2f} / {current_eval['maximum_marks']:.1f}</div>
+            <div class="stat-subtext">Original AI: {current_eval['ai_awarded_marks']:.2f}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with m2:
+        st.markdown(f"""
+        <div class="stat-card">
+            <div class="stat-label">Percentage & Band</div>
+            <div class="stat-value" style="color: #2563eb;">{pct:.1f}%</div>
+            <div class="stat-subtext">{grade_band[:20]}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with m3:
+        b_val = f"{current_eval['bleu_score']:.1f}%" if current_eval['bleu_score'] is not None else "N/A"
+        r_val = f"{current_eval['rouge_l_score']:.1f}%" if current_eval['rouge_l_score'] is not None else "N/A"
+        st.markdown(f"""
+        <div class="stat-card">
+            <div class="stat-label">Lexical Overlap Metrics</div>
+            <div class="stat-value" style="font-size: 1.35rem;">BLEU: {b_val}</div>
+            <div class="stat-subtext">ROUGE-L F1: {r_val}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with m4:
+        status_color = "#059669" if "Approv" in current_eval["review_status"] else "#d97706"
+        st.markdown(f"""
+        <div class="stat-card">
+            <div class="stat-label">Audit Review Status</div>
+            <div class="stat-value" style="color: {status_color}; font-size: 1.35rem;">{current_eval['review_status']}</div>
+            <div class="stat-subtext">Evaluator: {current_eval.get('reviewed_by') or 'Pending Human Sign-off'}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Academic Notice regarding BLEU/ROUGE-L
+    st.markdown("""
+    <div class="academic-disclaimer">
+        <b>Supplementary Metrics Interpretation:</b> BLEU and ROUGE-L measure lexical overlap against the model reference text.
+        In university descriptive assessments, a conceptually sound rephrasing may exhibit moderate BLEU while legitimately receiving high marks for technical accuracy.
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Side-by-Side Reference Solution vs Student Submission
+    st.subheader("Answer Comparison & Source Verification")
+    tab_comp, tab_text = st.tabs(["Side-by-Side Comparison", "Full Extracted Answer"])
+    
+    with tab_comp:
+        col_ans1, col_ans2 = st.columns(2)
+        with col_ans1:
+            st.markdown("##### Reference Model Answer")
+            with get_db() as db:
+                eval_obj = db.query(Evaluation).filter(Evaluation.id == current_eval["evaluation_id"]).first()
+                q_text = eval_obj.question.question_text if eval_obj and eval_obj.question else "N/A"
+                m_answer = eval_obj.question.model_answer if eval_obj and eval_obj.question else "N/A"
+            st.info(f"**Question:** {q_text}")
+            st.text_area("Model Answer", value=m_answer, height=180, disabled=True, label_visibility="collapsed")
+        with col_ans2:
+            st.markdown("##### Extracted Student Answer")
+            student_raw = current_eval.get("extracted_text", "")
+            w_count = len(student_raw.split())
+            st.caption(f"Candidate: **{current_eval['student_identifier']}** | Word Count: **{w_count} words**")
+            st.text_area("Student Text", value=student_raw, height=210, disabled=True, label_visibility="collapsed")
+
+    with tab_text:
+        st.code(current_eval.get("extracted_text", "No text found"), language="markdown")
+
+    st.markdown("<hr/>", unsafe_allow_html=True)
+
+    # Detailed Criterion Breakdown Table
+    st.subheader("Rubric-Wise Evaluator Findings & Evidence")
+    criteria = current_eval.get("criteria", [])
+    if criteria:
+        for idx, crit in enumerate(criteria, start=1):
+            with st.expander(f"Criterion #{idx}: {crit.get('criterion', 'Criterion')} — Score: {crit.get('awarded_marks', 0)} / {crit.get('maximum_marks', 0)}", expanded=True):
+                c_col1, c_col2 = st.columns([2, 1])
+                with c_col1:
+                    st.markdown(f"**Justification:** {crit.get('justification', 'No justification provided.')}")
+                    st.markdown(f"**Cited Student Evidence:** *\"{crit.get('evidence', 'No excerpt cited.')}\"*")
+                with c_col2:
+                    missing = crit.get("missing_concepts", [])
+                    errors = crit.get("errors", [])
+                    if missing:
+                        st.markdown("**Missing Concepts:**")
+                        for m in missing:
+                            st.markdown(f"- ⚠️ {m}")
+                    if errors:
+                        st.markdown("**Identified Misconceptions:**")
+                        for err in errors:
+                            st.markdown(f"- ❌ {err}")
+                    if not missing and not errors:
+                        st.markdown("✅ *Meets all core criteria benchmarks.*")
+
+    # Qualitative Diagnostics
+    st.subheader("Qualitative Learning Diagnostics")
+    d1, d2, d3 = st.columns(3)
+    with d1:
+        st.markdown("##### 🟢 Strengths Identified")
+        strengths = current_eval.get("strengths", [])
+        if strengths:
+            for s in strengths:
+                st.markdown(f"- {s}")
+        else:
+            st.caption("None logged.")
+    with d2:
+        st.markdown("##### 🟡 Conceptual Gaps")
+        gaps = current_eval.get("gaps", [])
+        if gaps:
+            for g in gaps:
+                st.markdown(f"- {g}")
+        else:
+            st.caption("No significant conceptual gaps identified.")
+    with d3:
+        st.markdown("##### 💡 Suggestions for Student")
+        suggs = current_eval.get("suggestions", [])
+        if suggs:
+            for sg in suggs:
+                st.markdown(f"- {sg}")
+        else:
+            st.caption("None logged.")
+
+    st.markdown("<hr/>", unsafe_allow_html=True)
+
+    # Human-in-the-Loop Review Panel
+    st.subheader("Faculty Review & Score Override Panel")
+    st.caption("Authorize the provisional AI evaluation or modify the awarded score with an auditable explanation.")
+
+    rev_col1, rev_col2 = st.columns([2, 3])
+    with rev_col1:
+        override_score = st.number_input(
+            "Final Marks (Override or Confirm)",
+            min_value=0.0,
+            max_value=float(current_eval["maximum_marks"]),
+            value=float(current_eval["final_awarded_marks"]),
+            step=0.25,
+            help="Modify the score if the AI evaluation was too harsh or too lenient."
+        )
+        faculty_name = st.text_input("Evaluator Name / ID", value=current_eval.get("reviewed_by") or "Prof. Academic Evaluator")
+
+    with rev_col2:
+        faculty_remarks = st.text_area(
+            "Faculty Remarks / Review Justification",
+            value=current_eval.get("human_feedback") or "Verified against rubric. Conceptual explanations are sound.",
+            height=95,
+            help="Explain the justification for any score adjustments or approval comments."
+        )
+
+    act_col1, act_col2, act_col3 = st.columns([1.5, 1.5, 3])
+    with act_col1:
+        if st.button("✅ Approve & Sign Off", type="primary"):
+            AssessmentRepository.override_evaluation(
+                evaluation_id=current_eval["evaluation_id"],
+                new_score=override_score,
+                comments=faculty_remarks,
+                reviewer_name=faculty_name,
+                status="Approved"
+            )
+            st.success("Evaluation approved and ratified in permanent academic audit log.")
+            st.rerun()
+
+    with act_col2:
+        if st.button("⚖️ Override Marks"):
+            AssessmentRepository.override_evaluation(
+                evaluation_id=current_eval["evaluation_id"],
+                new_score=override_score,
+                comments=faculty_remarks,
+                reviewer_name=faculty_name,
+                status="Overridden by Faculty"
+            )
+            st.warning("Score override recorded with timestamp.")
+            st.rerun()
+
+    # Audit Trail History
+    audit_logs = AssessmentRepository.get_audit_trail(current_eval["evaluation_id"])
+    if audit_logs:
+        st.markdown("##### 📜 Audit Trail History")
+        st.dataframe(audit_logs, use_container_width=True, hide_index=True)
+
+    st.markdown("<hr/>", unsafe_allow_html=True)
+
+    # Marksheet PDF & Exports
+    st.subheader("Download Official Marksheet")
+    pdf_col, json_col = st.columns([2, 2])
+
+    with pdf_col:
+        if st.button("📄 Generate & Download Official PDF Marksheet"):
+            with st.spinner("Compiling academic marksheet PDF..."):
+                pdf_path = ReportGenerator.generate_student_pdf_marksheet(
+                    assessment_title=sel_as_title,
+                    subject="Examination Module",
+                    student_id=current_eval["student_identifier"],
+                    question_text=q_text,
+                    max_marks=current_eval["maximum_marks"],
+                    final_marks=current_eval["final_awarded_marks"],
+                    ai_marks=current_eval["ai_awarded_marks"],
+                    review_status=current_eval["review_status"],
+                    criteria_breakdown=current_eval.get("criteria", []),
+                    strengths=current_eval.get("strengths", []),
+                    gaps=current_eval.get("gaps", []),
+                    suggestions=current_eval.get("suggestions", []),
+                    bleu_score=current_eval.get("bleu_score"),
+                    rouge_l_score=current_eval.get("rouge_l_score"),
+                    human_feedback=current_eval.get("human_feedback"),
+                    reviewed_by=current_eval.get("reviewed_by")
+                )
+                with open(pdf_path, "rb") as f:
+                    pdf_bytes = f.read()
+                st.download_button(
+                    label="⬇️ Download Marksheet (PDF)",
+                    data=pdf_bytes,
+                    file_name=os.path.basename(pdf_path),
+                    mime="application/pdf",
+                    type="primary"
+                )
+
+    with json_col:
+        json_dump = json.dumps(current_eval, indent=2, default=str)
+        st.download_button(
+            label="⬇️ Download Structured Evaluation JSON",
+            data=json_dump,
+            file_name=f"eval_{current_eval['student_identifier']}.json",
+            mime="application/json"
+        )

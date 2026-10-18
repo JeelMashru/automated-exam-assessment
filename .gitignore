@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Environment and sensitive keys
+.env
+*.key
+*.pem
+
+# SQLite database
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+
+# Uploaded student submissions and generated reports
+uploads/*
+!uploads/.gitkeep
+reports/*
+!reports/.gitkeep
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
