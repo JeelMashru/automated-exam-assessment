@@ -39,13 +39,13 @@ if css_file.exists():
 
 # Define native Streamlit multi-page navigation
 pages = [
-    st.Page("pages/dashboard.py", title="Dashboard", icon="📊", default=True),
-    st.Page("pages/new_assessment.py", title="New Assessment", icon="📝"),
-    st.Page("pages/results.py", title="Assessment Results", icon="📋"),
-    st.Page("pages/batch_evaluation.py", title="Batch Evaluation", icon="📁"),
-    st.Page("pages/benchmark.py", title="Benchmark & Validation", icon="📈"),
-    st.Page("pages/reports.py", title="Reports & Exports", icon="📄"),
-    st.Page("pages/settings.py", title="Settings & Configuration", icon="⚙️"),
+    st.Page("pages/dashboard.py", title="Class Dashboard", icon="📊", default=True),
+    st.Page("pages/new_assessment.py", title="Create New Exam", icon="📝"),
+    st.Page("pages/results.py", title="Student Results & Review", icon="📋"),
+    st.Page("pages/batch_evaluation.py", title="Grade Papers (Batch Upload)", icon="📁"),
+    st.Page("pages/benchmark.py", title="Accuracy & Benchmark Tests", icon="📈"),
+    st.Page("pages/reports.py", title="Reports & Marksheets", icon="📄"),
+    st.Page("pages/settings.py", title="Settings & AI Setup", icon="⚙️"),
 ]
 
 pg = st.navigation(pages)
@@ -58,7 +58,7 @@ with st.sidebar:
             🎓 ExamJudge AI
         </div>
         <div style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase;">
-            Automated Descriptive Assessment
+            Faculty Grading Assistant
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -70,15 +70,15 @@ with st.sidebar:
 
     st.markdown(f"""
     <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem; font-size: 0.75rem; margin-top: 1rem;">
-        <div style="font-weight: 700; color: #1e293b; margin-bottom: 4px;">ENGINE STATUS</div>
+        <div style="font-weight: 700; color: #1e293b; margin-bottom: 4px;">AI ASSISTANT STATUS</div>
         <div style="display: flex; align-items: center; gap: 6px;">
             <span style="height: 8px; width: 8px; background-color: {status_color}; border-radius: 50%; display: inline-block;"></span>
             <span style="font-weight: 600; color: {status_color};">{p_info['mode']}</span>
         </div>
-        <div style="color: #64748b; margin-top: 4px;">Model: <code>{p_info['model']}</code></div>
+        <div style="color: #64748b; margin-top: 4px;">Active Model: <code>{p_info['model']}</code></div>
     </div>
     """, unsafe_allow_html=True)
-    st.caption("v1.0.0 | Academic Assessment Platform")
+    st.caption("AI-Assisted Descriptive Exam Assessment")
 
 # Execute the active page
 pg.run()

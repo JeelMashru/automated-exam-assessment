@@ -49,14 +49,14 @@ class ScoreCalculator:
     def get_academic_grade_band(cls, percentage: float) -> Tuple[str, str]:
         """Maps percentage to standard academic classification."""
         if percentage >= 85.0:
-            return "First Class with Distinction (A+)", "Exceptional mastery of concepts, precision, and depth."
+            return "First Class with Distinction (A+)", "Exceptional mastery: Clear, precise, and thoroughly articulated."
         elif percentage >= 75.0:
-            return "First Class (A)", "Thorough understanding and coherent explanation with minor omissions."
+            return "First Class (A)", "Strong understanding: Solid grasp of core concepts with minor omissions."
         elif percentage >= 60.0:
-            return "Higher Second Class (B+)", "Competent grasp of core principles with noticeable gaps in detail."
+            return "Higher Second Class (B+)", "Good understanding: Covers key principles well with room for more detail."
         elif percentage >= 50.0:
-            return "Second Class (B)", "Basic understanding demonstrated; lacks depth or technical precision."
+            return "Second Class (B)", "Basic understanding: Demonstrates fundamental knowledge, but lacks technical depth."
         elif percentage >= 40.0:
-            return "Pass Class (C)", "Marginal comprehension; significant factual or conceptual shortcomings."
+            return "Pass Class (C)", "Marginal: Shows partial comprehension, but omitted several required points."
         else:
-            return "Unsatisfactory / Fail (F)", "Fails to meet minimum criteria for technical accuracy or substance."
+            return "Unsatisfactory / Needs Improvement (F)", "Needs improvement: Key concepts were not sufficiently addressed."

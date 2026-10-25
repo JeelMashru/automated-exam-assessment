@@ -114,26 +114,26 @@ def seed_database_if_empty(force: bool = False):
                 "maximum_marks": 4.0,
                 "awarded_marks": 4.0,
                 "evidence": "gives each running process the illusion of having a contiguous and vast address space",
-                "justification": "Flawless articulation of the virtual memory abstraction principle."
+                "justification": "Excellent explanation: The student clearly explains how virtual memory provides the illusion of a large contiguous address space."
             },
             {
                 "criterion": "Completeness & Mechanism Coverage",
                 "maximum_marks": 3.5,
                 "awarded_marks": 3.25,
                 "evidence": "hardware MMU translates virtual addresses to physical addresses using a per-process Page Table... Page Fault interrupt occurs",
-                "justification": "Covers pages, frames, MMU translation, and page fault handling. Minor omission of frame replacement algorithms."
+                "justification": "Covers pages, frames, MMU address translation, and page fault handling thoroughly. Minor omission of page replacement strategies."
             },
             {
                 "criterion": "Terminology & Structure",
                 "maximum_marks": 2.5,
                 "awarded_marks": 2.5,
                 "evidence": "Accurate technical phrasing throughout.",
-                "justification": "Professional academic prose with correct terminology."
+                "justification": "Well-written and logically organized answer with accurate technical terms."
             }
         ],
-        strengths=["Clear explanation of MMU role", "Accurate definition of page fault handling"],
-        conceptual_gaps=["Could mention page replacement policies (e.g. LRU) for completeness"],
-        improvement_suggestions=["Illustrate with an address translation diagram for full marks"],
+        strengths=["Clear, accurate explanation of the MMU's role", "Accurately explains how page faults work"],
+        conceptual_gaps=["Could mention page replacement algorithms (such as LRU or FIFO) for a complete explanation"],
+        improvement_suggestions=["Adding a quick sketch or diagram showing address translation from page to frame would make this an exemplary answer"],
         bleu_score=metrics["bleu_score"],
         rouge_l_score=metrics["rouge_l_score"],
         semantic_similarity=metrics["semantic_similarity"],

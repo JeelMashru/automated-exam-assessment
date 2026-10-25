@@ -25,37 +25,37 @@ from config.settings import REPORTS_DIR
 
 
 def render():
-    st.markdown('<div class="academic-header"><h1>Reports & Analytical Exports</h1><p>Export Official PDF Marksheets, Standardized CSV Records, and Class Diagnostics</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="academic-header"><h1>Class Reports & Grade Exports</h1><p>Download student grade sheets, export class spreadsheets for your LMS, and view class performance</p></div>', unsafe_allow_html=True)
 
     assessments = AssessmentRepository.get_all_assessments()
     if not assessments:
-        st.warning("No assessments found. Please create an assessment first.")
+        st.warning("No exams or assignments found. Please create one first.")
         return
 
     as_options = {a["title"]: a["id"] for a in assessments}
-    sel_as_title = st.selectbox("Select Target Examination", list(as_options.keys()))
+    sel_as_title = st.selectbox("Select Exam or Assignment", list(as_options.keys()))
     sel_as_id = as_options[sel_as_title]
 
     evaluations = AssessmentRepository.get_evaluations_for_assessment(sel_as_id)
     if not evaluations:
-        st.info("No evaluated answer scripts available for this assessment yet.")
+        st.info("No graded student papers available for this exam yet.")
         return
 
-    st.subheader(f"Cohort Evaluation Summary ({len(evaluations)} Students)")
+    st.subheader(f"Class Performance Overview ({len(evaluations)} Students)")
 
     # Dataframe overview
     df_rows = []
     for ev in evaluations:
         pct = (ev["final_awarded_marks"] / max(1.0, ev["maximum_marks"])) * 100
         df_rows.append({
-            "Student Identifier": ev["student_identifier"],
-            "Awarded Marks": f"{ev['final_awarded_marks']:.2f}",
+            "Student ID": ev["student_identifier"],
+            "Final Marks": f"{ev['final_awarded_marks']:.2f}",
             "Max Marks": f"{ev['maximum_marks']:.1f}",
-            "Percentage (%)": f"{pct:.1f}%",
-            "BLEU (%)": f"{ev['bleu_score']:.1f}%" if ev['bleu_score'] is not None else "-",
-            "ROUGE-L (%)": f"{ev['rouge_l_score']:.1f}%" if ev['rouge_l_score'] is not None else "-",
+            "Percentage": f"{pct:.1f}%",
+            "Word Match (BLEU)": f"{ev['bleu_score']:.1f}%" if ev['bleu_score'] is not None else "-",
+            "Sentence Match (ROUGE)": f"{ev['rouge_l_score']:.1f}%" if ev['rouge_l_score'] is not None else "-",
             "Review Status": ev["review_status"],
-            "Evaluator": ev["reviewed_by"] or "Pending"
+            "Teacher Sign-off": ev["reviewed_by"] or "Awaiting Sign-off"
         })
     df = pd.DataFrame(df_rows)
     st.dataframe(df, use_container_width=True, hide_index=True)
@@ -63,15 +63,15 @@ def render():
     st.markdown("<hr/>", unsafe_allow_html=True)
 
     # Export Action Buttons
-    st.subheader("Official Academic Export Formats")
+    st.subheader("Export Formats for Teachers & Gradebooks")
     exp_c1, exp_c2, exp_c3 = st.columns(3)
 
     with exp_c1:
-        st.markdown("##### 📊 Standardized CSV Export")
-        st.caption("Compatible with university LMS grading portals (Canvas, Moodle, Blackboard).")
+        st.markdown("##### 📊 Export to Excel / CSV (Gradebook)")
+        st.caption("Ready to import into university learning platforms like Canvas, Moodle, or Blackboard.")
         csv_data = ReportGenerator.export_batch_csv(evaluations)
         st.download_button(
-            label="⬇️ Download Batch CSV",
+            label="⬇️ Download Class CSV",
             data=csv_data,
             file_name=f"Assessment_{sel_as_title.replace(' ', '_')}_Marks.csv",
             mime="text/csv",
@@ -79,20 +79,20 @@ def render():
         )
 
     with exp_c2:
-        st.markdown("##### 📁 Complete JSON Export")
-        st.caption("Full structured diagnostic evaluation outputs and criteria logs.")
+        st.markdown("##### 📁 Complete Records (JSON)")
+        st.caption("Full evaluation data including detailed criteria marks, feedback, and student answers.")
         json_data = ReportGenerator.export_batch_json(evaluations)
         st.download_button(
-            label="⬇️ Download Structured JSON",
+            label="⬇️ Download Complete JSON",
             data=json_data,
             file_name=f"Assessment_{sel_as_title.replace(' ', '_')}_Full.json",
             mime="application/json"
         )
 
     with exp_c3:
-        st.markdown("##### 📄 PDF Marksheets")
-        st.caption("Generate official PDF marksheets with faculty review sign-offs.")
-        if st.button("Generate Marksheets for All Students"):
+        st.markdown("##### 📄 Student Marksheets (PDF)")
+        st.caption("Generate printable individual grade sheets with comments and teacher signature block.")
+        if st.button("📄 Generate All Student PDF Marksheets"):
             with st.spinner("Generating individual student PDF marksheets..."):
                 for ev in evaluations:
                     ReportGenerator.generate_student_pdf_marksheet(
@@ -113,12 +113,12 @@ def render():
                         human_feedback=ev.get("human_feedback"),
                         reviewed_by=ev.get("reviewed_by")
                     )
-                st.success(f"All marksheets generated in '{REPORTS_DIR}' folder.")
+                st.success(f"All marksheets generated successfully in the '{REPORTS_DIR}' folder!")
 
     st.markdown("<hr/>", unsafe_allow_html=True)
 
     # Criterion Performance Diagnostics Chart
-    st.subheader("Rubric Criterion Cohort Performance")
+    st.subheader("How the Class Performed on Each Rubric Criterion")
     crit_performance = {}
     for ev in evaluations:
         for c in ev.get("criteria", []):
@@ -144,8 +144,8 @@ def render():
 
         bars = ax.barh(short_names, values, color='#1e3a8a', height=0.5)
         ax.set_xlim(0, 100)
-        ax.set_xlabel("Cohort Mastery Percentage (%)", fontsize=9, fontweight='bold', color='#1e293b')
-        ax.set_title("Average Student Performance by Marking Rubric Criterion", fontsize=10, fontweight='bold', color='#0f172a')
+        ax.set_xlabel("Class Average Score (%)", fontsize=9, fontweight='bold', color='#1e293b')
+        ax.set_title("Class Average Score by Topic / Rubric Criterion", fontsize=10, fontweight='bold', color='#0f172a')
         ax.grid(axis='x', linestyle=':', alpha=0.5)
 
         for bar in bars:
@@ -156,7 +156,7 @@ def render():
         plt.tight_layout()
         st.pyplot(fig)
     else:
-        st.info("Criterion analytics will populate once submissions are evaluated.")
+        st.info("Criterion performance charts will appear once answer papers are evaluated.")
 
 
 if __name__ == "__main__":

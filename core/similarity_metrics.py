@@ -126,9 +126,7 @@ class SimilarityMetrics:
             "rouge_l_score": rouge_l,
             "semantic_similarity": round((bleu * 0.4 + rouge_l * 0.6), 2),  # Composite lexical proxy
             "disclaimer": (
-                "Notice: BLEU and ROUGE-L measure lexical and sequence overlap. "
-                "In descriptive academic assessment, high lexical overlap indicates verbatim similarity "
-                "to the reference text, while low lexical overlap may still represent conceptually accurate "
-                "rephrased student answers."
+                "Teacher's Note: Similarity scores (BLEU & ROUGE-L) show how closely the student's text matches the exact wording of the reference answer key. "
+                "Students who explain concepts correctly in their own words will naturally have lower word-matching scores, which is completely expected and rewarded."
             )
         }

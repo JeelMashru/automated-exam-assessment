@@ -111,9 +111,9 @@ class ReportGenerator:
         story = []
 
         # 1. Header Banner
-        story.append(Paragraph("OFFICIAL DESCRIPTIVE EXAMINATION MARKSHEET", title_style))
+        story.append(Paragraph("OFFICIAL STUDENT EXAMINATION MARKSHEET", title_style))
         story.append(Spacer(1, 4))
-        story.append(Paragraph(f"Institution Assessment Engine | Course: {subject} | Title: {assessment_title}", subtitle_style))
+        story.append(Paragraph(f"Course: {subject} | Examination: {assessment_title}", subtitle_style))
         story.append(Spacer(1, 10))
         story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#1e3a8a"), spaceAfter=12))
 
@@ -121,21 +121,21 @@ class ReportGenerator:
         pct = round((final_marks / max_marks) * 100, 1) if max_marks > 0 else 0
         meta_data = [
             [
-                Paragraph("<b>Candidate Identifier:</b>", cell_style),
+                Paragraph("<b>Student ID:</b>", cell_style),
                 Paragraph(student_id, cell_bold),
                 Paragraph("<b>Review Status:</b>", cell_style),
                 Paragraph(f"<font color='#059669'><b>{review_status}</b></font>" if "Approv" in review_status else f"<font color='#d97706'><b>{review_status}</b></font>", cell_style),
             ],
             [
-                Paragraph("<b>Total Awarded Marks:</b>", cell_style),
+                Paragraph("<b>Final Score Awarded:</b>", cell_style),
                 Paragraph(f"<b>{final_marks:.2f} / {max_marks:.2f} ({pct}%)</b>", cell_bold),
-                Paragraph("<b>Original AI Marks:</b>", cell_style),
+                Paragraph("<b>AI Suggested Score:</b>", cell_style),
                 Paragraph(f"{ai_marks:.2f} / {max_marks:.2f}", cell_style),
             ],
             [
-                Paragraph("<b>BLEU Lexical Overlap:</b>", cell_style),
+                Paragraph("<b>Answer Key Match (BLEU):</b>", cell_style),
                 Paragraph(f"{bleu_score:.2f}%" if bleu_score is not None else "N/A", cell_style),
-                Paragraph("<b>ROUGE-L Sequence F1:</b>", cell_style),
+                Paragraph("<b>Phrasing Match (ROUGE-L):</b>", cell_style),
                 Paragraph(f"{rouge_l_score:.2f}%" if rouge_l_score is not None else "N/A", cell_style),
             ]
         ]
@@ -151,7 +151,7 @@ class ReportGenerator:
         story.append(Spacer(1, 12))
 
         # 3. Question Text Box
-        story.append(Paragraph("<b>Assessed Question:</b>", heading2_style))
+        story.append(Paragraph("<b>Exam Question:</b>", heading2_style))
         q_p = Paragraph(f"<i>{question_text}</i>", cell_style)
         q_table = Table([[q_p]], colWidths=[530])
         q_table.setStyle(TableStyle([
@@ -164,20 +164,20 @@ class ReportGenerator:
         story.append(Spacer(1, 12))
 
         # 4. Rubric Breakdown Table
-        story.append(Paragraph("<b>Rubric-Wise Evaluation Breakdown:</b>", heading2_style))
+        story.append(Paragraph("<b>Detailed Marking Breakdown:</b>", heading2_style))
         crit_rows = [
             [
                 Paragraph("<b>Criterion</b>", cell_bold),
                 Paragraph("<b>Max</b>", cell_bold),
                 Paragraph("<b>Awarded</b>", cell_bold),
-                Paragraph("<b>Evidence & Justification</b>", cell_bold),
+                Paragraph("<b>Teacher Feedback & Cited Evidence</b>", cell_bold),
             ]
         ]
         for c in criteria_breakdown:
             c_name = c.get("criterion", "Criterion")
             c_max = f"{float(c.get('maximum_marks', 0)):.1f}"
             c_awarded = f"{float(c.get('awarded_marks', 0)):.1f}"
-            just = f"<b>Justification:</b> {c.get('justification', '')}<br/><b>Evidence:</b> <i>{c.get('evidence', 'None')}</i>"
+            just = f"<b>Feedback:</b> {c.get('justification', '')}<br/><b>Student Evidence:</b> <i>{c.get('evidence', 'None')}</i>"
             crit_rows.append([
                 Paragraph(c_name, cell_style),
                 Paragraph(c_max, cell_style),
@@ -203,17 +203,17 @@ class ReportGenerator:
             feed_data = []
             if strengths:
                 feed_data.append([
-                    Paragraph("<b>Identified Strengths:</b>", cell_bold),
+                    Paragraph("<b>What the Student Did Well:</b>", cell_bold),
                     Paragraph("<br/>".join([f"• {s}" for s in strengths]), cell_style)
                 ])
             if gaps:
                 feed_data.append([
-                    Paragraph("<b>Conceptual Gaps:</b>", cell_bold),
+                    Paragraph("<b>Points Missed or Incomplete:</b>", cell_bold),
                     Paragraph("<br/>".join([f"• {g}" for g in gaps]), cell_style)
                 ])
             if suggestions:
                 feed_data.append([
-                    Paragraph("<b>Improvement Suggestions:</b>", cell_bold),
+                    Paragraph("<b>Tips for Future Improvement:</b>", cell_bold),
                     Paragraph("<br/>".join([f"• {s}" for s in suggestions]), cell_style)
                 ])
 
@@ -225,19 +225,19 @@ class ReportGenerator:
                 ("TOPPADDING", (0, 0), (-1, -1), 4),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ]))
-            story.append(Paragraph("<b>Qualitative Diagnostics:</b>", heading2_style))
+            story.append(Paragraph("<b>Detailed Academic Feedback:</b>", heading2_style))
             story.append(feed_table)
             story.append(Spacer(1, 12))
 
         # 6. Faculty Human Review Sign-Off
         sign_data = [
             [
-                Paragraph("<b>Human Reviewer Remarks:</b>", cell_bold),
+                Paragraph("<b>Teacher's Remarks:</b>", cell_bold),
                 Paragraph(human_feedback or "Approved without additional comments.", cell_style),
             ],
             [
-                Paragraph("<b>Authorized Evaluator:</b>", cell_bold),
-                Paragraph(reviewed_by or "Academic Faculty", cell_style),
+                Paragraph("<b>Evaluated By:</b>", cell_bold),
+                Paragraph(reviewed_by or "Academic Faculty Examiner", cell_style),
             ]
         ]
         sign_table = Table(sign_data, colWidths=[140, 390])
@@ -247,15 +247,14 @@ class ReportGenerator:
             ("TOPPADDING", (0, 0), (-1, -1), 5),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
         ]))
-        story.append(Paragraph("<b>Audit & Verification Sign-Off:</b>", heading2_style))
+        story.append(Paragraph("<b>Teacher Verification & Final Sign-Off:</b>", heading2_style))
         story.append(sign_table)
         story.append(Spacer(1, 12))
 
         # Footer Disclaimer
         disclaimer_text = (
-            "Disclaimer: This evaluation was conducted with an LLM-as-a-Judge assessment architecture. "
-            "Under university academic integrity guidelines, automated marks remain provisional until ratified "
-            "by an authorized human academic examiner."
+            "Note: AI-generated marks are recommendations to assist grading. "
+            "All final marks and feedback are reviewed and approved by an authorized faculty examiner."
         )
         story.append(Paragraph(f"<i>{disclaimer_text}</i>", ParagraphStyle("Disc", parent=styles["Normal"], fontSize=8, leading=10, textColor=colors.HexColor("#64748b"))))
 
@@ -268,19 +267,19 @@ class ReportGenerator:
         rows = []
         for ev in evaluations:
             rows.append({
-                "Student Identifier": ev.get("student_identifier"),
-                "Original Filename": ev.get("filename"),
+                "Student ID": ev.get("student_identifier"),
+                "Uploaded File": ev.get("filename"),
                 "Question": ev.get("question_number", 1),
                 "Max Marks": ev.get("maximum_marks"),
-                "AI Awarded Marks": ev.get("ai_awarded_marks"),
-                "Final Awarded Marks": ev.get("final_awarded_marks"),
-                "Percentage": round((ev.get("final_awarded_marks", 0) / max(1, ev.get("maximum_marks", 1))) * 100, 1),
-                "BLEU Score (%)": ev.get("bleu_score"),
-                "ROUGE-L Score (%)": ev.get("rouge_l_score"),
+                "AI Suggested Marks": ev.get("ai_awarded_marks"),
+                "Final Marks": ev.get("final_awarded_marks"),
+                "Percentage (%)": round((ev.get("final_awarded_marks", 0) / max(1, ev.get("maximum_marks", 1))) * 100, 1),
+                "Answer Match (BLEU %)": ev.get("bleu_score"),
+                "Phrasing Match (ROUGE-L %)": ev.get("rouge_l_score"),
                 "Review Status": ev.get("review_status"),
-                "Evaluated Date": str(ev.get("evaluated_at"))[:19],
-                "Human Reviewer": ev.get("reviewed_by", "Pending"),
-                "Faculty Feedback": ev.get("human_feedback", ""),
+                "Date Graded": str(ev.get("evaluated_at"))[:19],
+                "Teacher Evaluator": ev.get("reviewed_by", "Pending"),
+                "Teacher Comments": ev.get("human_feedback", ""),
             })
         df = pd.DataFrame(rows)
         return df.to_csv(index=False)

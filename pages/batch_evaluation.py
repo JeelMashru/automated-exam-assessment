@@ -23,18 +23,18 @@ from config.settings import UPLOADS_DIR
 
 
 def render():
-    st.markdown('<div class="academic-header"><h1>Batch Answer Evaluation</h1><p>Ingest Student Answer PDFs, Extract Text, and Execute LLM-as-a-Judge Grading</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="academic-header"><h1>Grade Student Papers (Batch Upload)</h1><p>Upload student answer PDFs, review extracted text, and run automated AI grading</p></div>', unsafe_allow_html=True)
 
     assessments = AssessmentRepository.get_all_assessments()
     if not assessments:
-        st.warning("No assessments found. Please create an assessment first.")
+        st.warning("No exams or assignments found. Please create one first.")
         return
 
     # Assessment & Question Selector
     col_a, col_q = st.columns(2)
     with col_a:
         as_options = {a["title"]: a["id"] for a in assessments}
-        sel_as_title = st.selectbox("Select Target Assessment", list(as_options.keys()))
+        sel_as_title = st.selectbox("Select Exam or Assignment", list(as_options.keys()))
         sel_as_id = as_options[sel_as_title]
 
     with col_q:
@@ -43,32 +43,32 @@ def render():
             questions = assessment_obj.questions if assessment_obj else []
 
         if not questions:
-            st.error("No questions found for this assessment.")
+            st.error("No questions found for this exam.")
             return
 
         q_map = {f"Q{q.question_number}: {q.question_text[:60]}... ({q.maximum_marks} marks)": q for q in questions}
-        sel_q_label = st.selectbox("Select Question to Evaluate", list(q_map.keys()))
+        sel_q_label = st.selectbox("Select Question to Grade", list(q_map.keys()))
         selected_question = q_map[sel_q_label]
 
     st.markdown("<hr/>", unsafe_allow_html=True)
 
     # Ingestion Method Tabs: File Upload vs Direct Text
-    tab_pdf, tab_manual = st.tabs(["📁 Batch PDF Upload", "✍️ Manual Text / Sample Submission"])
+    tab_pdf, tab_manual = st.tabs(["📁 Upload Student PDFs", "✍️ Quick Paste (Single Answer)"])
 
     extracted_submissions = []
 
     with tab_pdf:
         st.subheader("Upload Student Answer Scripts (PDF)")
-        st.caption("Upload one or multiple PDF files. Hand-written or scanned PDFs will be detected.")
+        st.caption("Upload one or multiple PDF files. Both digital and scanned papers will be read automatically.")
         uploaded_files = st.file_uploader(
-            "Select Student PDF Files",
+            "Select Student Answer PDFs",
             type=["pdf"],
             accept_multiple_files=True,
             help="Upload student answer papers in PDF format."
         )
 
         if uploaded_files:
-            st.markdown(f"**{len(uploaded_files)} file(s) selected.** Processing text extraction...")
+            st.markdown(f"**{len(uploaded_files)} file(s) selected.** Reading text from papers...")
             for idx, file_obj in enumerate(uploaded_files, start=1):
                 # Save file locally to uploads directory
                 safe_name = f"{uuid.uuid4().hex[:8]}_{file_obj.name}"
@@ -87,20 +87,20 @@ def render():
                     "text": extraction["text"],
                     "page_count": extraction["page_count"],
                     "word_count": extraction["word_count"],
-                    "status": "SUCCESS" if extraction["success"] and not extraction["is_scanned"] else ("SCANNED_WARNING" if extraction["is_scanned"] else "FAILED"),
+                    "status": "Ready to Grade" if extraction["success"] and not extraction["is_scanned"] else ("Scanned PDF (Check Text)" if extraction["is_scanned"] else "Could Not Read"),
                     "error": extraction.get("error")
                 })
 
     with tab_manual:
-        st.subheader("Direct Text Ingestion (Quick Demo / Copy-Paste)")
+        st.subheader("Quick Answer Test (Copy & Paste)")
         c_m1, c_m2 = st.columns([1, 2])
         with c_m1:
-            manual_student_id = st.text_input("Candidate Identifier", value="DEMO-STUDENT-99")
+            manual_student_id = st.text_input("Student Roll Number / Name", value="DEMO-STUDENT-99")
         with c_m2:
             st.write("")
 
         manual_text = st.text_area(
-            "Student Answer Submission Text",
+            "Student's Answer Text",
             value=(
                 "Virtual memory provides an illusion of a large memory space by combining RAM with disk storage. "
                 "Paging divides logical memory into pages and physical memory into frames. "
@@ -109,7 +109,7 @@ def render():
             height=120
         )
 
-        if st.button("➕ Stage Manual Submission for Evaluation"):
+        if st.button("➕ Add Answer for Grading"):
             extracted_submissions.append({
                 "student_id": manual_student_id,
                 "filename": "Direct_Input.txt",
@@ -117,33 +117,33 @@ def render():
                 "text": manual_text,
                 "page_count": 1,
                 "word_count": len(manual_text.split()),
-                "status": "SUCCESS",
+                "status": "Ready to Grade",
                 "error": None
             })
-            st.success(f"Candidate {manual_student_id} staged for evaluation.")
+            st.success(f"Student {manual_student_id} added and ready for grading.")
 
     # Review Extracted Submissions
     if extracted_submissions:
         st.markdown("<hr/>", unsafe_allow_html=True)
-        st.subheader(f"Extracted Submissions ({len(extracted_submissions)} Staged)")
+        st.subheader(f"Papers Ready to Grade ({len(extracted_submissions)} Papers)")
 
         # Summary preview table
         table_rows = []
         for s in extracted_submissions:
             table_rows.append({
-                "Candidate ID": s["student_id"],
-                "File": s["filename"],
+                "Student ID": s["student_id"],
+                "File Name": s["filename"],
                 "Pages": s["page_count"],
                 "Word Count": s["word_count"],
-                "Status": s["status"],
-                "Details / Warning": s["error"] or "Text successfully parsed."
+                "Read Status": s["status"],
+                "Notes": s["error"] or "Text read successfully."
             })
         st.dataframe(table_rows, use_container_width=True, hide_index=True)
 
         # Allow faculty to inspect and edit extracted text prior to running LLM
-        with st.expander("🔍 Review / Edit Extracted Answer Text Prior to Grading"):
+        with st.expander("🔍 Preview or Edit Extracted Text Before Grading"):
             for i, sub_item in enumerate(extracted_submissions):
-                st.markdown(f"**Candidate: {sub_item['student_id']} ({sub_item['filename']})**")
+                st.markdown(f"**Student: {sub_item['student_id']} ({sub_item['filename']})**")
                 sub_item["text"] = st.text_area(
                     f"Edit Text for {sub_item['student_id']}",
                     value=sub_item["text"],
@@ -159,10 +159,10 @@ def render():
         prov_info = provider.get_provider_info()
 
         with col_mode:
-            st.info(f"Active Evaluator Mode: **{prov_info['mode']}** (Model: `{prov_info['model']}`)")
+            st.info(f"Active AI Grader: **{prov_info['mode']}** (Model: `{prov_info['model']}`)")
 
         with col_exec:
-            start_eval_btn = st.button("🚀 Start AI Evaluation Pipeline", type="primary", use_container_width=True)
+            start_eval_btn = st.button("🚀 Start Grading Papers", type="primary", use_container_width=True)
 
         if start_eval_btn:
             progress_bar = st.progress(0)
@@ -184,7 +184,7 @@ def render():
             eval_results = []
 
             for i, sub_item in enumerate(extracted_submissions):
-                status_text.text(f"Evaluating submission {i+1} of {len(extracted_submissions)}: {sub_item['student_id']}...")
+                status_text.text(f"Grading paper {i+1} of {len(extracted_submissions)}: {sub_item['student_id']}...")
 
                 # 1. Save submission record to DB
                 sub_record = AssessmentRepository.add_submission(
@@ -226,30 +226,30 @@ def render():
                         bleu_score=data["bleu_score"],
                         rouge_l_score=data["rouge_l_score"],
                         semantic_similarity=data["semantic_similarity"],
-                        review_status="Pending Human Review"
+                        review_status="Awaiting Teacher Review"
                     )
                     eval_results.append({
-                        "Candidate": sub_item["student_id"],
-                        "Awarded Marks": f"{data['awarded_marks']:.2f} / {selected_question.maximum_marks:.1f}",
-                        "BLEU (%)": f"{data['bleu_score']:.1f}%",
-                        "ROUGE-L (%)": f"{data['rouge_l_score']:.1f}%",
-                        "Status": "✅ Evaluated (Pending Review)"
+                        "Student ID": sub_item["student_id"],
+                        "Suggested Score": f"{data['awarded_marks']:.2f} / {selected_question.maximum_marks:.1f}",
+                        "Word Match (BLEU)": f"{data['bleu_score']:.1f}%",
+                        "Sentence Match (ROUGE)": f"{data['rouge_l_score']:.1f}%",
+                        "Grading Status": "✅ Graded (Ready for Review)"
                     })
                 else:
                     eval_results.append({
-                        "Candidate": sub_item["student_id"],
-                        "Awarded Marks": "Error",
-                        "BLEU (%)": "-",
-                        "ROUGE-L (%)": "-",
-                        "Status": f"❌ Failed: {res['error']}"
+                        "Student ID": sub_item["student_id"],
+                        "Suggested Score": "Error",
+                        "Word Match (BLEU)": "-",
+                        "Sentence Match (ROUGE)": "-",
+                        "Grading Status": f"❌ Failed: {res['error']}"
                     })
 
                 progress_bar.progress((i + 1) / len(extracted_submissions))
 
-            status_text.text("Batch Evaluation Completed!")
-            st.success("All candidate submissions processed successfully!")
+            status_text.text("Grading Complete!")
+            st.success("All student papers have been evaluated successfully!")
             st.dataframe(eval_results, use_container_width=True, hide_index=True)
-            st.info("Navigate to **Assessment Results** to inspect individual criterion evidence, review justifications, and ratify scores.")
+            st.info("Head over to **📋 Student Results & Review** to inspect answers, check feedback, and confirm final marks.")
 
 
 if __name__ == "__main__":
