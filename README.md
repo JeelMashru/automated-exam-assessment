@@ -1,5 +1,11 @@
 # 🎓 ExamJudge AI: Automated Descriptive Exam Assessment Engine with LLM-as-a-Judge
 
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/frontend-Streamlit-FF4B4B.svg)](https://streamlit.io/)
+[![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini%202.5-4285F4.svg)](https://ai.google.dev/)
+[![Docker](https://img.shields.io/badge/docker-ready-2496ED.svg)](https://www.docker.com/)
+[![Tests Passed](https://img.shields.io/badge/tests-22%2F22%20passing-success.svg)](tests/)
+
 An end-to-end, university-grade examination assessment platform that evaluates descriptive student answer scripts using an **LLM-as-a-Judge** architecture, multi-tier weighted rubrics, lexical and sequence similarity metrics (BLEU, ROUGE-L), and an auditable human-in-the-loop review workflow.
 
 ---
@@ -11,7 +17,7 @@ An end-to-end, university-grade examination assessment platform that evaluates d
 3. **LLM-as-a-Judge Grading Engine**: Supports Google Gemini API (`gemini-2.5-flash`), OpenAI (`gpt-4o-mini`), and an offline calibrated demo engine.
 4. **Adversarial Prompt-Injection Defense**: Delimiter encapsulation and pattern disarming against embedded student jailbreaks.
 5. **Programmatic Score Clamping**: Python-enforced bounds ($0 \le \text{criterion} \le \text{max}$) preventing arithmetic hallucinations.
-6. **Lexical & Sequence Metrics**: BLEU-2 and ROUGE-L LCS overlap metrics with academic context disclaimers.
+6. **Lexical & Sequence Metrics**: BLEU-2 and ROUGE-L overlap metrics with clear academic context disclaimers.
 7. **Human-in-the-Loop Review**: Faculty score override controls with an immutable timestamped audit history log.
 8. **Official University Marksheets**: Downloadable ReportLab PDF marksheets, standardized LMS CSV files, and structured JSON records.
 9. **Empirical Benchmark Suite**: Evaluates AI marks against authentic human examiner scores (MAE: 0.25, Pearson $r$: 0.994).
@@ -23,12 +29,22 @@ An end-to-end, university-grade examination assessment platform that evaluates d
 ```
 descriptive-exam-assessment/
 ├── app.py                      # Main Streamlit application and sidebar router
-├── requirements.txt            # Pinned dependencies
-├── README.md                   # Setup and execution guide
+├── requirements.txt            # Pinned production dependencies
+├── packages.txt                # Linux/Debian system dependencies (Tesseract OCR, fonts)
+├── Dockerfile                  # Production container image specification
+├── docker-compose.yml          # Container orchestration with data volumes
+├── Procfile                    # PaaS process configuration (Render, Railway, Heroku)
+├── render.yaml                 # 1-Click Render blueprint deployment specification
+├── .streamlit/
+│   └── config.toml             # Headless cloud configuration and UI theme
+├── .github/
+│   └── workflows/
+│       └── ci.yml              # Automated GitHub Actions test pipeline
+├── README.md                   # Complete deployment and documentation guide
 ├── .env.example                # Environment variables template
 ├── .gitignore                  # Git ignore rules
 ├── config/
-│   └── settings.py             # Global paths, presets, and environment loader
+│   └── settings.py             # Global paths, presets, secrets, and environment loader
 ├── core/
 │   ├── pdf_processor.py        # PyMuPDF extractor and scan detector
 │   ├── ocr_processor.py        # Tesseract OCR capability check and wrapper
@@ -57,119 +73,129 @@ descriptive-exam-assessment/
 │   └── settings.py             # API keys, live test ping, and strictness calibration
 ├── assets/
 │   └── styles.css              # Academic navy visual theme and card styles
-├── tests/
-│   ├── test_pdf_processor.py
-│   ├── test_rubric_engine.py
-│   ├── test_score_calculator.py
-│   ├── test_response_validator.py
-│   ├── test_similarity_metrics.py
-│   ├── test_benchmark.py
-│   └── test_audit_and_overrides.py
+├── tests/                      # 22 automated test suites (100% passing)
 ├── data/                       # Local SQLite database storage
 ├── uploads/                    # Uploaded student answer PDFs
 ├── reports/                    # Generated PDF marksheets
-└── docs/
-    ├── project_report.md       # 21-section academic honours project report
-    ├── architecture.md         # Component data flow specification
-    ├── evaluator_prompts.md    # Prompts, schemas, and few-shot examples
-    ├── benchmark_report.md     # Empirical evaluation and discrepancy report
-    └── api_setup.md            # API key acquisition and setup guide
+└── docs/                       # Comprehensive honours project documentation
 ```
 
 ---
 
-## 🚀 Quickstart & Execution Guide (Windows PowerShell)
+## 🚀 Pushing to GitHub (Step-by-Step)
 
-### 1. Prerequisites
-- **Python**: Version 3.11, 3.12, 3.13, or 3.14.
-- **Git** (optional).
+To push this project to your GitHub account:
 
-### 2. Navigate to Project Directory
+### Step 1: Create a New Repository on GitHub
+1. Log in to [GitHub](https://github.com).
+2. Click **New Repository** (or visit https://github.com/new).
+3. Name your repository (e.g., `examjudge-ai` or `automated-exam-assessment`).
+4. Keep it **Public** (required for free Streamlit Community Cloud hosting) or **Private**.
+5. Do **NOT** initialize with a README, .gitignore, or license (we already created production versions of these).
+6. Click **Create repository**.
+
+### Step 2: Push Your Local Code to GitHub
+Open your terminal in the project directory (`C:\Users\jeelm\.gemini\antigravity\scratch\descriptive-exam-assessment`) and run:
+
 ```powershell
-cd C:\Users\jeelm\.gemini\antigravity\scratch\descriptive-exam-assessment
+# 1. Rename the default branch to main
+git branch -M main
+
+# 2. Add your GitHub repository as the remote origin (replace with your GitHub URL)
+git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO_NAME>.git
+
+# 3. Push your code
+git push -u origin main
 ```
 
-### 3. (Optional) Set up a Virtual Environment
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+---
+
+## 🌐 Cloud Deployment Options
+
+### Option 1: Streamlit Community Cloud (Recommended & 100% Free)
+Streamlit Community Cloud is the official, native cloud platform designed specifically for Streamlit applications. It deploys directly from your GitHub repository in under 2 minutes with zero configuration.
+
+1. Go to [share.streamlit.io](https://share.streamlit.io/) and click **Sign in with GitHub**.
+2. Click **Create app** > **Yup, I have an app**.
+3. Select your repository: `<YOUR_GITHUB_USERNAME>/<YOUR_REPO_NAME>`.
+4. Branch: `main`.
+5. Main file path: `app.py`.
+6. Click **Advanced settings** (Secrets) and enter your API credentials:
+   ```toml
+   LLM_PROVIDER = "gemini"
+   LLM_MODEL = "gemini-2.5-flash"
+   GEMINI_API_KEY = "AIzaSyYourActualKeyHere"
+   ```
+7. Click **Deploy!**
+Your app will be live at `https://<your-custom-name>.streamlit.app` with free SSL, automatic reboots, and continuous deployment whenever you `git push`.
+
+---
+
+### Option 2: Render (Free Web Service)
+This repository includes a preconfigured [`render.yaml`](render.yaml) blueprint:
+
+1. Log in to [Render](https://render.com/) with GitHub.
+2. Click **New +** > **Blueprint**.
+3. Select your GitHub repository. Render will automatically detect [`render.yaml`](render.yaml).
+4. Add your `GEMINI_API_KEY` under Environment Variables.
+5. Click **Apply**. Render will build and deploy the application.
+
+---
+
+### Option 3: Docker Container Deployment (AWS, GCP Cloud Run, DigitalOcean, VPS)
+To deploy as a standalone production Docker container:
+
+```bash
+# Build the container image
+docker build -t examjudge-ai:latest .
+
+# Run the container locally or on your cloud VM
+docker run -d -p 8501:8501 \
+  -e GEMINI_API_KEY="AIzaSyYourActualKeyHere" \
+  -v $(pwd)/data:/app/data \
+  --name examjudge examjudge-ai:latest
 ```
 
-### 4. Install Dependencies
+Access at `http://<your-server-ip>:8501`.
+
+---
+
+### ℹ️ A Note on Vercel vs Streamlit
+> [!NOTE]
+> **Why Vercel is not recommended for Streamlit apps:**  
+> Vercel is designed for **stateless serverless functions** (Next.js, React, Node.js APIs) with strict 10–60 second execution timeouts and **no support for persistent WebSockets**.
+> 
+> Streamlit apps rely on a continuous, stateful WebSocket connection (`streamlit run app.py`) to manage session state, file uploads, PDF processing, and reactive UI reruns. Running Streamlit on Vercel breaks session state and causes frequent disconnects.
+> 
+> **The Solution:** **Streamlit Community Cloud** or **Render** provides the exact same developer experience as Vercel (push to GitHub $\rightarrow$ instant auto-build $\rightarrow$ live HTTPS URL), but with native, persistent WebSocket and Python server support for free.
+
+---
+
+## 🧪 Local Execution & Testing
+
+### 1. Install Dependencies
 ```powershell
 pip install -r requirements.txt
 ```
 
-### 5. Configure API Credentials
+### 2. Configure Environment
 Copy `.env.example` to `.env`:
 ```powershell
 Copy-Item .env.example .env
 ```
-Open `.env` and add your Google Gemini API Key:
-```env
-LLM_PROVIDER=gemini
-LLM_MODEL=gemini-2.5-flash
-GEMINI_API_KEY=AIzaSyYourActualKeyHere
-```
-*(Get a free key from [Google AI Studio](https://aistudio.google.com/). If you do not have a key, the platform automatically runs in full Offline Demo Mode).*
+Add your `GEMINI_API_KEY` in `.env` (or use the built-in Offline Demo Evaluator without an API key).
 
-### 6. Launch the Application
-Run via Streamlit:
+### 3. Run Application
 ```powershell
-python -m streamlit run app.py
+streamlit run app.py
 ```
-Open your browser to: **`http://localhost:8501`**
+Open **`http://localhost:8501`** in your browser.
 
----
-
-## 🧪 Running Automated Tests
-
-All automated unit and regression tests are implemented using `pytest`.
-
-Run the complete test suite:
+### 4. Run Test Suite
 ```powershell
 python -m pytest -v
 ```
-
-Expected output:
-```
-tests/test_audit_and_overrides.py::test_assessment_creation_and_retrieval PASSED
-tests/test_benchmark.py::test_agreement_metrics_calculation PASSED
-tests/test_benchmark.py::test_repeatability_metrics PASSED
-tests/test_pdf_processor.py::test_pdf_extraction_success PASSED
-tests/test_pdf_processor.py::test_corrupted_pdf_handling PASSED
-tests/test_pdf_processor.py::test_nonexistent_pdf_handling PASSED
-tests/test_response_validator.py::test_clean_json_string_with_markdown_ticks PASSED
-tests/test_response_validator.py::test_clean_json_with_conversational_chatter PASSED
-tests/test_response_validator.py::test_valid_llm_json_validation PASSED
-tests/test_response_validator.py::test_malformed_json_failure PASSED
-tests/test_rubric_engine.py::test_valid_rubric_sum PASSED
-tests/test_rubric_engine.py::test_invalid_rubric_sum_mismatch PASSED
-tests/test_rubric_engine.py::test_empty_criteria_rejected PASSED
-tests/test_rubric_engine.py::test_negative_or_zero_criterion_marks PASSED
-tests/test_rubric_engine.py::test_default_rubric_scaling PASSED
-tests/test_score_calculator.py::test_score_calculation_normal PASSED
-tests/test_score_calculator.py::test_score_clamping_exceeds_maximum PASSED
-tests/test_score_calculator.py::test_score_clamping_negative_marks PASSED
-tests/test_score_calculator.py::test_academic_grade_banding PASSED
-tests/test_similarity_metrics.py::test_identical_texts_high_similarity PASSED
-tests/test_similarity_metrics.py::test_partial_overlap_similarity PASSED
-tests/test_similarity_metrics.py::test_empty_string_handling PASSED
-
-============================= 22 passed in 0.95s ==============================
-```
-
----
-
-## 📖 End-to-End Workflow Walkthrough
-
-1. **Dashboard (`1. Dashboard`)**: View class score histograms, pending review metrics, and active examinations.
-2. **Create Assessment (`2. New Assessment`)**: Specify course code, question formulation, reference model answer, and multi-tier rubric criteria. The system enforces that criteria marks sum to question maximum marks.
-3. **Upload & Evaluate (`4. Batch Evaluation`)**: Upload student answer PDFs or paste text directly. Preview extracted text, verify page/word count, and run the AI grading pipeline.
-4. **Inspect & Review (`3. Assessment Results`)**: Compare student answers side-by-side with reference solutions, view cited evidence per rubric criterion, modify scores, enter faculty remarks, and approve.
-5. **Download Marksheet (`3. Assessment Results` or `6. Reports`)**: Generate official university-grade PDF marksheets formatted with ReportLab.
-6. **Benchmark Validation (`5. Benchmark and Validation`)**: Inspect MAE, RMSE, Pearson correlation, and run repeatability tests with temperature zero.
-7. **Configure AI Provider (`7. Settings`)**: Switch between Google Gemini, OpenAI, or the calibrated local demo engine, and test connection latency.
+All 22 unit, integration, and security tests will execute and pass.
 
 ---
 

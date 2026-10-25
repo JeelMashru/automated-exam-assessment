@@ -20,16 +20,33 @@ ASSETS_DIR = BASE_DIR / "assets"
 for directory in [DATA_DIR, UPLOADS_DIR, REPORTS_DIR, ASSETS_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 
+def get_secret(key: str, default: str = "") -> str:
+    """
+    Retrieve configuration or secret from OS environment, falling back to
+    Streamlit secrets (st.secrets) when running on cloud platforms.
+    """
+    val = os.getenv(key)
+    if val:
+        return val
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and key in st.secrets:
+            return str(st.secrets[key])
+    except Exception:
+        pass
+    return default
+
+
 # Database
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'assessment.db'}")
+DATABASE_URL = get_secret("DATABASE_URL", f"sqlite:///{DATA_DIR / 'assessment.db'}")
 
 # LLM Providers Configuration
-DEFAULT_PROVIDER = os.getenv("LLM_PROVIDER", "gemini")  # 'gemini', 'openai', 'mock'
-DEFAULT_MODEL = os.getenv("LLM_MODEL", "gemini-2.5-flash")
+DEFAULT_PROVIDER = get_secret("LLM_PROVIDER", "gemini")  # 'gemini', 'openai', 'mock'
+DEFAULT_MODEL = get_secret("LLM_MODEL", "gemini-2.5-flash")
 
-# API Keys (read from environment, NEVER hardcoded)
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or ""
+# API Keys (read from environment or secrets, NEVER hardcoded)
+GEMINI_API_KEY = get_secret("GEMINI_API_KEY") or get_secret("GOOGLE_API_KEY") or ""
+OPENAI_API_KEY = get_secret("OPENAI_API_KEY") or ""
 
 # LLM Parameters
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.0"))
