@@ -7,6 +7,12 @@ import streamlit as st
 import os
 import sys
 from pathlib import Path
+
+# Add project root to sys.path
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 from config import settings
 from core.llm_client import get_llm_provider, GeminiProvider, OpenAIProvider, MockDemoProvider
 from core.ocr_processor import OCRProcessor
@@ -187,3 +193,16 @@ def render():
                     db.commit()
                 st.warning("All submissions and evaluations cleared from database.")
                 st.rerun()
+
+
+if __name__ == "__main__":
+    try:
+        st.set_page_config(page_title="Settings & Configuration - ExamJudge AI", page_icon="🎓", layout="wide")
+    except Exception:
+        pass
+    from config.settings import ASSETS_DIR
+    css_file = ASSETS_DIR / "styles.css"
+    if css_file.exists():
+        with open(css_file, "r") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    render()

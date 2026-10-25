@@ -3,6 +3,15 @@ Dashboard Page: Executive overview, key metrics, charts, and recent evaluations.
 """
 
 import streamlit as st
+import os
+import sys
+from pathlib import Path
+
+# Add project root to sys.path
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -162,3 +171,16 @@ def render():
         In compliance with academic assessment protocols, final accreditation requires faculty verification and review sign-off.
     </div>
     """, unsafe_allow_html=True)
+
+
+if __name__ == "__main__":
+    try:
+        st.set_page_config(page_title="Faculty Assessment Dashboard - ExamJudge AI", page_icon="🎓", layout="wide")
+    except Exception:
+        pass
+    from config.settings import ASSETS_DIR
+    css_file = ASSETS_DIR / "styles.css"
+    if css_file.exists():
+        with open(css_file, "r") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    render()

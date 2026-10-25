@@ -4,8 +4,15 @@ Batch Evaluation Page: Multi-PDF upload, text extraction, review, and AI evaluat
 
 import streamlit as st
 import os
+import sys
 import uuid
 from pathlib import Path
+
+# Add project root to sys.path
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 from database.repository import AssessmentRepository
 from database.db import get_db
 from database.models import Assessment, Question
@@ -243,3 +250,16 @@ def render():
             st.success("All candidate submissions processed successfully!")
             st.dataframe(eval_results, use_container_width=True, hide_index=True)
             st.info("Navigate to **Assessment Results** to inspect individual criterion evidence, review justifications, and ratify scores.")
+
+
+if __name__ == "__main__":
+    try:
+        st.set_page_config(page_title="Batch Evaluation - ExamJudge AI", page_icon="🎓", layout="wide")
+    except Exception:
+        pass
+    from config.settings import ASSETS_DIR
+    css_file = ASSETS_DIR / "styles.css"
+    if css_file.exists():
+        with open(css_file, "r") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    render()

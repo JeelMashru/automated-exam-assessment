@@ -3,6 +3,15 @@ New Assessment Page: Configures question papers, reference model solutions, and 
 """
 
 import streamlit as st
+import os
+import sys
+from pathlib import Path
+
+# Add project root to sys.path
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 import json
 from database.repository import AssessmentRepository
 from core.rubric_engine import RubricEngine
@@ -222,3 +231,16 @@ def render():
             st.balloons()
         except Exception as e:
             st.error(f"Failed to persist assessment to database: {str(e)}")
+
+
+if __name__ == "__main__":
+    try:
+        st.set_page_config(page_title="Create Examination Assessment - ExamJudge AI", page_icon="🎓", layout="wide")
+    except Exception:
+        pass
+    from config.settings import ASSETS_DIR
+    css_file = ASSETS_DIR / "styles.css"
+    if css_file.exists():
+        with open(css_file, "r") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    render()
