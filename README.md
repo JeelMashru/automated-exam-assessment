@@ -160,16 +160,6 @@ Access at `http://<your-server-ip>:8501`.
 
 ---
 
-### ℹ️ A Note on Vercel vs Streamlit
-> [!NOTE]
-> **Why Vercel is not recommended for Streamlit apps:**  
-> Vercel is designed for **stateless serverless functions** (Next.js, React, Node.js APIs) with strict 10–60 second execution timeouts and **no support for persistent WebSockets**.
-> 
-> Streamlit apps rely on a continuous, stateful WebSocket connection (`streamlit run app.py`) to manage session state, file uploads, PDF processing, and reactive UI reruns. Running Streamlit on Vercel breaks session state and causes frequent disconnects.
-> 
-> **The Solution:** **Streamlit Community Cloud** or **Render** provides the exact same developer experience as Vercel (push to GitHub $\rightarrow$ instant auto-build $\rightarrow$ live HTTPS URL), but with native, persistent WebSocket and Python server support for free.
-
----
 
 ## 🧪 Local Execution & Testing
 
